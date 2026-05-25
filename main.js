@@ -2193,7 +2193,7 @@ function updateOnlinePlayersUI() {
             });
         }
 
-        function openWeaponShop() { playSound.success(); document.getElementById('weapon-modal').classList.remove('hidden'); renderWeaponShop(); }
+        function openWeaponShop() { switchBGM(weaponshopBgm); playSound.success(); document.getElementById('weapon-modal').classList.remove('hidden'); renderWeaponShop(); }
         function renderWeaponShop() {
             const list = document.getElementById('lobby-weapon-list'); list.innerHTML = '';
             Object.keys(WEAPON_CONFIG).forEach(w => {
@@ -3061,6 +3061,10 @@ function updateOnlinePlayersUI() {
         const fireBgm = new Audio('fire_bgm.mp3'); 
         fireBgm.loop = true;  
         fireBgm.volume = 0.4;
+
+        const weaponshopBgm = new Audio('weaponshop_bgm.mp3'); 
+        weaponshopBgm.loop = true;  
+        weaponshopBgm.volume = 0.4;
 
         // 2. 智慧狀態追蹤
         let bgmState = {
