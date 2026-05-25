@@ -1024,32 +1024,98 @@ function spawnBossCockroach() {
             window.dispatchEvent(new Event('resize'));
         }
 
-        function backToLobby() {
-			
-            playSound.success(); gameState.active = false;
-            document.getElementById('lobby-screen').classList.remove('hidden'); document.getElementById('game-container').classList.add('hidden');
-            document.getElementById('top-bar').classList.add('hidden'); document.getElementById('bottom-bar').classList.add('hidden');
-            document.getElementById('game-over-modal').classList.add('hidden'); document.getElementById('combo-display').classList.add('hidden');
-            
-            // Clean up PvP parameters
-            document.getElementById('pvp-stats').classList.add('hidden');
-            document.getElementById('pvp-traps-panel').classList.add('hidden');
-            document.getElementById('pvp-blind-overlay').classList.add('hidden');
-            document.getElementById('pvp-trap-notification').classList.add('hidden');
-            document.getElementById('pvp-end-modal').classList.add('hidden');
-            document.getElementById('pvp-status-box').classList.add('hidden');
-            resetPvPConnectBtn();
+       function backToLobby() {
+    playSound.success(); 
+    gameState.active = false;
+    
+    document.getElementById('lobby-screen').classList.remove('hidden'); 
+    document.getElementById('game-container').classList.add('hidden');
+    document.getElementById('top-bar').classList.add('hidden'); 
+    document.getElementById('bottom-bar').classList.add('hidden');
+    document.getElementById('game-over-modal').classList.add('hidden'); 
+    document.getElementById('combo-display').classList.add('hidden');
+    
+    // Clean up PvP parameters
+    document.getElementById('pvp-stats').classList.add('hidden');
+    document.getElementById('pvp-traps-panel').classList.add('hidden');
+    document.getElementById('pvp-blind-overlay').classList.add('hidden');
+    document.getElementById('pvp-trap-notification').classList.add('hidden');
+    document.getElementById('pvp-end-modal').classList.add('hidden');
+    document.getElementById('pvp-status-box').classList.add('hidden');
+    resetPvPConnectBtn();
 
-            pvpState.active = false;
-            if (client) { client.end(); client = null; }
-            if (pvpState.pingTimer) { clearInterval(pvpState.pingTimer); pvpState.pingTimer = null; }
+    pvpState.active = false;
 
-            const hours = Math.floor(gameState.time / 60); const mins = Math.floor(gameState.time % 60);
-            const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-            document.getElementById('lobby-time-display').innerHTML = gameState.isNight ? `<i class="fa-solid fa-moon mr-1 text-purple-400"></i>${timeStr}` : `<i class="fa-regular fa-sun mr-1 text-yellow-400"></i>${timeStr}`;
-            
-            clearEntities(); updateLobbyUI(); saveDB();
+    // 🚨 【核心修正】不掐斷大廳連線，只退訂特定的 PvP 對戰房，並在回大廳時立刻補發心跳
+    if (client && client.connected) {
+        // 如果原本有對戰房間號，只取消訂閱該房間，不影響大廳
+        if (pvpState.roomId) {
+            client.unsubscribe(`roach_pvp/room_${pvpState.roomId}`);
         }
+
+        // 🌟 貼心加強：回大廳時立刻抓取正確稱號並廣播一次，讓名單秒刷新
+        if (typeof PRESENCE_TOPIC !== 'undefined') {
+            let currentTitleName = '無稱號';
+            let currentTitleColor = 'from-zinc-400 to-zinc-500';
+            
+            if (typeof TITLE_CONFIG !== 'undefined') {
+                let myTitleObj = null;
+                if (db.equipped_title) {
+                    myTitleObj = TITLE_CONFIG.find(t => t.name === db.equipped_title || t.id === db.equipped_title);
+                } else if (db.equipped_shop_title) {
+                    myTitleObj = TITLE_CONFIG.find(t => t.id === db.equipped_shop_title);
+                }
+                if (!myTitleObj) {
+                    for (let i = TITLE_CONFIG.length - 1; i >= 0; i--) {
+                        if (TITLE_CONFIG[i].level <= 100 && db.level >= TITLE_CONFIG[i].level) {
+                            myTitleObj = TITLE_CONFIG[i];
+                            break;
+                        }
+                    }
+                }
+                if (myTitleObj) {
+                    currentTitleName = myTitleObj.name;
+                    currentTitleColor = myTitleObj.color;
+                }
+            }
+
+            // 立刻廣播自己回歸大廳了
+            client.publish(PRESENCE_TOPIC, JSON.stringify({
+                id: pvpState.myPlayerId,
+                name: db.username,
+                level: db.level || 1,
+                titleName: currentTitleName,
+                titleColor: currentTitleColor
+            }));
+        }
+    } else {
+        // 防呆：如果 client 真的因為意外徹底斷線了，回大廳時自動幫他重新連上
+        if (typeof initMQTT === 'function') initMQTT();
+    }
+
+    // 清空房號與對手變數
+    pvpState.roomId = '';
+    pvpState.opponentId = '';
+
+    // 關閉戰鬥中的 Ping 定時器
+    if (pvpState.pingTimer) { 
+        clearInterval(pvpState.pingTimer); 
+        pvpState.pingTimer = null; 
+    }
+
+    // 🕒 保留你原本的時間渲染邏輯
+    const hours = Math.floor(gameState.time / 60); 
+    const mins = Math.floor(gameState.time % 60);
+    const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    document.getElementById('lobby-time-display').innerHTML = gameState.isNight 
+        ? `<i class="fa-solid fa-moon mr-1 text-purple-400"></i>${timeStr}` 
+        : `<i class="fa-regular fa-sun mr-1 text-yellow-400"></i>${timeStr}`;
+    
+    // 🧹 保留原本的清理與儲存邏輯
+    clearEntities(); 
+    updateLobbyUI(); 
+    saveDB();
+}
 
         function closeModals() {
 			if (typeof switchBGM === 'function' && typeof bgm !== 'undefined') {
