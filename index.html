@@ -259,7 +259,9 @@
                         </span>
                         
                         <span id="lobby-username" class="text-base sm:text-lg font-black text-white mb-1.5 tracking-wide">匿名玩家</span>
-                        
+                        <button onclick="openChangeNameModal()" class="text-zinc-400 hover:text-yellow-400 transition text-sm">
+        <i class="fa-solid fa-user-pen"></i>
+    </button>
                         <div class="flex flex-wrap items-center gap-2 mt-0.5">
                             <div class="text-xl text-yellow-400 font-mono font-black mr-1">
                                 Lv.<span id="lobby-level">1</span>
@@ -1062,6 +1064,26 @@
         <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
             <div id="online-players-list" class="flex flex-col gap-2">
                 </div>
+        </div>
+    </div>
+</div>
+<div id="change-name-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl w-80 max-w-[90%] text-center shadow-2xl animate-scale-in">
+        <h3 class="text-xl font-black text-yellow-400 mb-2">
+            <i class="fa-solid fa-pen-to-square mr-2"></i>變更玩家暱稱
+        </h3>
+        <p class="text-zinc-400 text-xs mb-4">更改名字需要消耗 <span class="text-amber-400 font-bold">10,000</span> 金幣</p>
+        
+        <input type="text" id="new-username-input" maxlength="12" placeholder="請輸入新暱稱 (最多12字)" 
+               class="w-full bg-zinc-800 border border-zinc-600 text-white text-center px-3 py-2.5 rounded-xl mb-4 focus:outline-none focus:border-yellow-500 font-bold text-sm" />
+        
+        <div class="flex gap-3">
+            <button onclick="closeChangeNameModal()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded-xl text-sm transition">
+                取消
+            </button>
+            <button onclick="confirmChangeName()" class="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-black py-2 rounded-xl text-sm transition shadow-lg">
+                確認改名
+            </button>
         </div>
     </div>
 </div>
