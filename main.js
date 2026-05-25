@@ -1553,6 +1553,100 @@ function confirmPlayerName() {
 }
 
 // =========================================
+// 📝 玩家改名系統 (消耗 10,000 金幣)
+// =========================================
+
+// 開啟改名視窗
+function openChangeNameModal() {
+    if (typeof playSound !== 'undefined' && playSound.thud) playSound.thud();
+    
+    const inputEl = document.getElementById('new-username-input');
+    if (inputEl) inputEl.value = db.username || ''; // 預設帶入舊名字
+    
+    document.getElementById('change-name-modal').classList.remove('hidden');
+}
+
+// 關閉改名視窗
+function closeChangeNameModal() {
+    document.getElementById('change-name-modal').classList.add('hidden');
+}
+
+// 確認改名扣錢
+function confirmChangeName() {
+    const inputEl = document.getElementById('new-username-input');
+    if (!inputEl) return;
+
+    const newName = inputEl.value.trim();
+
+    // 🔍 條件檢查 1：是否為空
+    if (!newName) {
+        alert("❌ 名字不能是空白的喔！");
+        return;
+    }
+
+    // 🔍 條件檢查 2：是否跟舊的一樣
+    if (newName === db.username) {
+        alert("❌ 這不就是你現在的名字嗎？");
+        return;
+    }
+
+    // 🔍 條件檢查 3：金幣是否足夠
+    const CHANGE_NAME_COST = 10000;
+    if (db.coins < CHANGE_NAME_COST) {
+        alert(`❌ 金幣不足！改名需要 ${CHANGE_NAME_COST.toLocaleString()} 金幣，你目前只有 ${db.coins.toLocaleString()}。`);
+        return;
+    }
+
+    // 💰 通過檢查，正式扣錢與改名
+    db.coins -= CHANGE_NAME_COST;
+    db.username = newName;
+
+    // 💾 儲存資料與刷新大廳 UI
+    saveDB();
+    updateLobbyUI();
+    closeChangeNameModal();
+
+    if (typeof playSound !== 'undefined' && playSound.success) playSound.success();
+    alert(`🎉 改名成功！歡迎新身份：${newName}`);
+
+    // 📡 【核心同步】立刻向 MQTT 發送新心跳，讓線上名單的其他人即時看到你的新名字！
+    if (client && client.connected && typeof PRESENCE_TOPIC !== 'undefined') {
+        let currentTitleName = '無稱號';
+        let currentTitleColor = 'from-zinc-400 to-zinc-500';
+        
+        if (typeof TITLE_CONFIG !== 'undefined') {
+            let myTitleObj = null;
+            if (db.equipped_title) {
+                myTitleObj = TITLE_CONFIG.find(t => t.name === db.equipped_title || t.id === db.equipped_title);
+            } else if (db.equipped_shop_title) {
+                myTitleObj = TITLE_CONFIG.find(t => t.id === db.equipped_shop_title);
+            }
+            if (!myTitleObj) {
+                for (let i = TITLE_CONFIG.length - 1; i >= 0; i--) {
+                    if (TITLE_CONFIG[i].level <= 100 && db.level >= TITLE_CONFIG[i].level) {
+                        myTitleObj = TITLE_CONFIG[i];
+                        break;
+                    }
+                }
+            }
+            if (myTitleObj) {
+                currentTitleName = myTitleObj.name;
+                currentTitleColor = myTitleObj.color;
+            }
+        }
+
+        // 馬上廣播改名後的全新資訊
+        client.publish(PRESENCE_TOPIC, JSON.stringify({
+            id: pvpState.myPlayerId,
+            name: db.username,
+            level: db.level || 1,
+            titleName: currentTitleName,
+            titleColor: currentTitleColor
+        }));
+    }
+}
+
+// =========================================
 // 🟢 線上玩家心跳偵測系統 (抓兇手版)
 // =========================================
 function startPresenceHeartbeat() {
