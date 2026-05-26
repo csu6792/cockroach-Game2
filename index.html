@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>不准動！小強大作戰2 - Cockroach Smash & Kitchen Sanctuary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MQTT.js CDN 用於線上 1對1 即時通訊 -->
+    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #110d0a; user-select: none; -webkit-user-select: none;
+            touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        img, svg, a, button { -webkit-touch-callout: none; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            55% { transform: translate(-1px, 2px) rotate(-1deg); }
+            70% { transform: translate(-3px, 1px) rotate(0deg); }
+            85% { transform: translate(2px, 1px) rotate(-2deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+        .shake-effect { animation: shake 0.15s; animation-iteration-count: 1; }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-animation { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes comboPulse {
+            0% { transform: scale(1) translate(-50%, -50%); }
+            50% { transform: scale(1.3) translate(-50%, -50%); text-shadow: 0 0 20px #fbbf24; }
+            100% { transform: scale(1) translate(-50%, -50%); }
+        }
+        .combo-pulse { animation: comboPulse 0.3s ease-out; }
+
+        .weapon-glow-transition { transition: filter 0.3s ease; }
+        .scene-hidden { display: none; }
+        
+        .text-gradient-gold {
+            background: linear-gradient(to right, #fbbf24, #f59e0b, #fbbf24);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+
+        /* Day/Night Transition */
+        #night-overlay {
+            transition: opacity 2s ease-in-out;
+            pointer-events: none;
+        }
+        .is-night #night-overlay { opacity: 1; }
+        .is-day #night-overlay { opacity: 0; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        /* Shield Animation */
+        @keyframes shieldPulse {
+            0% { opacity: 0.6; transform: scale(1) translate(-50%, -50%); }
+            50% { opacity: 0.9; transform: scale(1.05) translate(-48%, -48%); }
+            100% { opacity: 0.6; transform: scale(1) translate(-50%, -50%); }
+        }
+        .shield-active { animation: shieldPulse 1.5s infinite; }
+
+        /* ==========================================
+           外框特效動畫 (角色資訊卡邊框邊緣火焰特效)
+           ========================================== */
+        @keyframes redFireGlow {
+            0%, 100% { box-shadow: 0 0 10px #f97316, inset 0 0 5px #ef4444; border-color: #ef4444; }
+            50% { box-shadow: 0 0 22px #ea580c, inset 0 0 10px #dc2626; border-color: #f97316; }
+        }
+        .border-red-fire { animation: redFireGlow 1.5s infinite ease-in-out; border-width: 2.5px !important; }
+
+        @keyframes blueFrostGlow {
+            0%, 100% { box-shadow: 0 0 10px #06b6d4, inset 0 0 5px #3b82f6; border-color: #3b82f6; }
+            50% { box-shadow: 0 0 22px #0891b2, inset 0 0 10px #2563eb; border-color: #06b6d4; }
+        }
+        .border-blue-frost { animation: blueFrostGlow 1.5s infinite ease-in-out; border-width: 2.5px !important; }
+
+        @keyframes purpleDemonGlow {
+            0%, 100% { box-shadow: 0 0 10px #a855f7, inset 0 0 5px #7c3aed; border-color: #7c3aed; }
+            50% { box-shadow: 0 0 22px #c084fc, inset 0 0 12px #6d28d9; border-color: #a855f7; }
+        }
+        .border-purple-demon { animation: purpleDemonGlow 1.5s infinite ease-in-out; border-width: 2.5px !important; }
+
+        @keyframes rainbowNebulaGlow {
+            0% { box-shadow: 0 0 12px #ef4444, inset 0 0 6px #f59e0b; border-color: #ef4444; }
+            20% { box-shadow: 0 0 18px #3b82f6, inset 0 0 9px #06b6d4; border-color: #3b82f6; }
+            40% { box-shadow: 0 0 12px #10b981, inset 0 0 6px #84cc16; border-color: #10b981; }
+            60% { box-shadow: 0 0 18px #a855f7, inset 0 0 9px #ec4899; border-color: #a855f7; }
+            80% { box-shadow: 0 0 12px #f43f5e, inset 0 0 6px #eab308; border-color: #f43f5e; }
+            100% { box-shadow: 0 0 12px #ef4444, inset 0 0 6px #f59e0b; border-color: #ef4444; }
+        }
+        .border-rainbow-nebula { animation: rainbowNebulaGlow 3s infinite linear; border-width: 2.5px !important; }
+
+        @keyframes auroraCosmicGlow {
+            0%, 100% { box-shadow: 0 0 15px #22c55e, inset 0 0 8px #06b6d4; border-color: #06b6d4; }
+            33% { box-shadow: 0 0 24px #a855f7, inset 0 0 10px #ec4899; border-color: #ec4899; }
+            66% { box-shadow: 0 0 18px #eab308, inset 0 0 9px #f97316; border-color: #f97316; }
+        }
+        .border-aurora-cosmic { animation: auroraCosmicGlow 5s infinite ease-in-out; border-width: 2.5px !important; }
+		
+		/* 1. 霓虹閃爍特效稱號 */
+		@keyframes titleNeonGlow {
+			0%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #f09, 0 0 30px #f09; color: #fff; }
+			50% { text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 10px #f09, 0 0 15px #f09; color: #ffd6e8; }
+		}
+		.title-neon { 
+			animation: titleNeonGlow 1.5s ease-in-out infinite alternate; 
+		}
+
+		/* 2. 流動金光特效稱號 */
+		@keyframes titleGoldShine {
+			0% { background-position: 0% 50%; }
+			100% { background-position: 100% 50%; }
+		}
+		.title-gold-shine {
+			background: linear-gradient(270deg, #fbbf24, #fffbeb, #fbbf24, #f59e0b);
+			background-size: 200% 200%;
+			-webkit-background-clip: text;
+			color: transparent;
+			animation: titleGoldShine 2s linear infinite;
+			font-weight: 900;
+		}
+/* 🌌 扭蛋限定：超強流光漸層移動動畫 */
+    @keyframes gacha-gradient-flow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* 綁定流光動畫至類名 */
+    .bg-\[length\:400\%_400\%\] {
+        background-size: 400% 400% !important;
+        animation: gacha-gradient-flow 5s ease infinite !important;
+    }
+    .bg-\[length\:200\%_auto\] {
+        background-size: 200% auto !important;
+        animation: gacha-gradient-flow 3s linear infinite !important;
+    }
+
+	/* 大廳動態橫幅專用動畫 */
+@keyframes bug-dash {
+    0% { transform: translateX(-30px) rotate(90deg); opacity: 0; }
+    10% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateX(350px) rotate(90deg); opacity: 0; }
+}
+.animate-bug-dash {
+    animation: bug-dash 4s linear infinite;
+}
+
+@keyframes shoe-stomp {
+    0%, 50% { transform: scale(1.5) translateY(-20px) rotate(-12deg); opacity: 0; }
+    55% { transform: scale(1) translateY(0) rotate(-12deg); opacity: 0.6; } /* 踩下瞬間 */
+    75% { transform: scale(1) translateY(0) rotate(-12deg); opacity: 0.6; }
+    100% { transform: scale(1) translateY(0) rotate(-12deg); opacity: 0; }
+}
+.animate-shoe-stomp {
+    animation: shoe-stomp 4s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+.animate-logo-float {
+    animation: logo-float 3s ease-in-out infinite;
+}
+@keyframes fire-particle {
+    0% { transform: translateY(0) scale(1); opacity: 0.8; }
+    100% { transform: translateY(var(--fire-y, -24px)) scale(0.2); opacity: 0; }
+}
+.fire-particle {
+    position: absolute; border-radius: 50%; filter: blur(2px);
+    pointer-events: none;
+    animation: fire-particle var(--fire-dur, 0.7s) ease-out infinite;
+}
+    </style>
+</head>
+<body class="relative flex flex-col justify-between h-screen text-white">
+
+    <div id="start-screen" class="absolute inset-0 z-[10000] bg-zinc-950 flex flex-col items-center justify-center overflow-hidden transition-opacity duration-500">
+    
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.12)_0%,transparent_60%)] pointer-events-none"></div>
+    <div class="absolute top-1/4 left-1/4 w-40 h-40 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-40 h-40 bg-yellow-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="text-center z-10 mb-16 mt-[-5vh]">
+        
+        <div class="flex justify-center mb-3 text-yellow-500 text-6xl drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+            <i class="fa-solid fa-shoe-prints -rotate-45"></i>
+            <i class="fa-solid fa-bug ml-4 rotate-12 text-amber-700"></i>
+        </div>
+        
+        <h1 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-amber-600 drop-shadow-lg tracking-wider leading-tight">
+            不准動！<br>小強大作戰2
+        </h1>
+        
+        <p class="text-zinc-600 mt-4 font-mono text-xs tracking-[0.35em] uppercase">COCKROACH SMASH 2</p>
+    </div>
+
+    <button onclick="enterGameFromStart()" class="z-10 group relative bg-black/40 backdrop-blur-md text-white font-bold text-xl py-4 px-12 rounded-full border border-amber-500/40 hover:border-amber-400 hover:bg-amber-950/40 shadow-[0_0_15px_rgba(245,158,11,0.2),inset_0_1px_2px_rgba(255,255,255,0.15)] active:scale-95 transition-all duration-300 animate-pulse hover:animate-none">
+        <div class="absolute inset-0 bg-gradient-to-r from-amber-600/15 to-yellow-600/15 rounded-full pointer-events-none"></div>
+        <span class="tracking-[0.2em] text-yellow-100 group-hover:text-white drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">點擊進入遊戲</span>
+    </button>
+
+    <div class="absolute bottom-6 left-0 right-0 text-center z-10 pointer-events-none select-none">
+        <span class="text-[10px] font-mono text-zinc-600 tracking-[0.2em] uppercase bg-zinc-900/30 px-3 py-1 rounded-full border border-zinc-800/40 backdrop-blur-sm">
+            Ver 2.00525
+        </span>
+    </div>
+</div>
+	
+    <!-- 遊戲大廳 -->
+    <div id="lobby-screen" class="absolute inset-0 z-50 bg-[#1a1510] flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-[#1a1510] to-black">
+        <canvas id="lobby-anim-canvas" class="absolute inset-0 z-0 opacity-40 pointer-events-none"></canvas>
+        <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        
+        <div class="z-10 flex flex-col items-center w-full max-w-md pb-20">
+			
+			<!-- Title -->
+            <div class="relative w-full mb-4 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-black/40 border border-amber-900/30 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-sm h-28">
+    
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.15)_0%,transparent_70%)] animate-pulse pointer-events-none"></div>
+
+    <div class="absolute w-full h-full pointer-events-none">
+        <i class="fa-solid fa-bug text-amber-800 text-xl absolute bottom-2 left-0 animate-bug-dash drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"></i>
+        <i class="fa-solid fa-shoe-prints text-amber-500/20 text-5xl absolute top-2 right-10 animate-shoe-stomp -rotate-12"></i>
+    </div>
+
+    <div class="z-10 flex flex-col items-center animate-logo-float">
+        <div class="flex items-center justify-center mb-1 space-x-2 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]">
+            <i class="fa-solid fa-shoe-prints -rotate-12 text-xl opacity-80"></i>
+            <span class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-600 drop-shadow-md tracking-widest">
+                小強大作戰2
+            </span>
+            <i class="fa-solid fa-bug rotate-12 text-amber-700 text-xl opacity-80"></i>
+        </div>
+        <div class="text-[9px] font-mono text-amber-500/70 tracking-[0.3em] uppercase bg-black/50 px-3 py-0.5 rounded-full border border-amber-900/50 shadow-inner">
+            
+        </div>
+    </div>
+</div>
+
+            <!-- Player Stats -->
+           <div id="player-profile-card" class="bg-black/60 border border-zinc-700 rounded-2xl p-4 w-full mb-4 shadow-2xl backdrop-blur-sm relative transition-all duration-300">
+                <div class="absolute top-2 right-2 text-xs text-zinc-500 font-mono flex items-center gap-2">
+                    <button onclick="toggleMusic()" id="lobby-music-btn" class="text-zinc-500 hover:text-zinc-400 p-1 bg-zinc-800/80 rounded-full border border-zinc-700/50 flex items-center justify-center w-6 h-6 z-20 pointer-events-auto" title="音樂開關">
+                        <i class="fa-solid fa-volume-xmark"></i>
+                    </button>
+                    <span id="lobby-time-display"><i class="fa-regular fa-sun mr-1"></i>08:00</span>
+                </div>
+                
+                <div class="flex justify-between items-end mb-2 mt-2">
+                    <div class="font-bold flex flex-col w-full">
+                        <span id="player-title-display" onclick="openTitleSelect()" class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 drop-shadow-sm mb-0.5 cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 w-max" title="點擊自選稱號">
+                            見習生 <i class="fa-solid fa-pen-to-square text-[10px] text-zinc-400"></i>
+                        </span>
+                        
+                        <span id="lobby-username" class="text-base sm:text-lg font-black text-white mb-1.5 tracking-wide">匿名玩家</span>
+                        <button onclick="openChangeNameModal()" class="text-zinc-400 hover:text-yellow-400 transition text-sm">
+        <i class="fa-solid fa-user-pen"></i>
+    </button>
+                        <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                            <div class="text-xl text-yellow-400 font-mono font-black mr-1">
+                                Lv.<span id="lobby-level">1</span>
+                            </div>
+                            
+                            <button onclick="document.getElementById('borders-modal').classList.remove('hidden'); renderBorderSelect();" 
+                                    class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold px-2 py-1 rounded-lg border border-zinc-600 text-[11px] font-sans flex items-center transition-transform active:scale-95 shadow-sm">
+                                <i class="fa-solid fa-border-all mr-1.5 text-pink-400"></i>換邊框
+                            </button>
+
+                            <button onclick="document.getElementById('online-modal').classList.remove('hidden');" 
+                                    class="bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 font-bold px-2 py-1 rounded-lg border border-zinc-600 text-[11px] flex items-center shadow-sm transition-colors">
+                                <span class="relative flex h-2 w-2 mr-1.5">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                線上: <span id="online-count" class="text-emerald-400 font-mono font-black ml-1">1</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-1.5 bg-yellow-500/20 px-3 py-1.5 rounded-full border border-yellow-500/30 flex-shrink-0">
+                        <i class="fa-solid fa-coins text-yellow-400"></i>
+                        <span id="lobby-coins" class="font-black text-lg text-yellow-400 font-mono">0</span>
+                    </div>
+                    <div id="equipped-weapon-display" class="flex items-center gap-1.5 bg-orange-900/40 px-2 py-1.5 rounded-full border border-orange-700/40 flex-shrink-0"></div>
+                </div>
+                
+                <div class="w-full bg-zinc-800 rounded-full h-3 border border-zinc-900 relative overflow-hidden mt-1">
+                    <div id="lobby-exp-bar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full w-0 transition-all duration-500"></div>
+                </div>
+                <div class="text-right text-[10px] text-zinc-400 mt-1 font-mono"><span id="lobby-exp-text">0/100</span> EXP</div>
+            </div>
+
+            <!-- Menu Buttons -->
+           <div class="grid grid-cols-2 gap-3 w-full mb-3">
+    
+            <button onclick="openSceneSelect('battle')" class="col-span-2 group relative bg-black/50 backdrop-blur-md text-white font-black text-xl py-3.5 rounded-2xl border border-red-500/50 hover:border-red-400 hover:bg-red-950/60 shadow-[0_0_15px_rgba(225,29,72,0.2),inset_0_1px_2px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(225,29,72,0.6),inset_0_0_20px_rgba(225,29,72,0.3)] active:scale-95 transition-all duration-300 overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-rose-600/20 to-red-700/20 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-white/10 group-hover:translate-x-full -translate-x-full skew-x-12 transition-transform duration-700 pointer-events-none"></div>
+        
+        <i class="fa-solid fa-crosshairs mr-2 text-red-400 group-hover:text-red-300 transition-colors drop-shadow-[0_0_8px_rgba(248,113,113,0.8)] z-10"></i>
+        <span class="tracking-widest group-hover:text-red-50 drop-shadow-[0_0_5px_rgba(225,29,72,0.8)] z-10">挑戰模式</span>
+    </button>
+
+    <button onclick="openPvPModal()" class="col-span-2 group relative bg-black/50 backdrop-blur-md text-white font-black text-xl py-3.5 rounded-2xl border border-blue-500/50 hover:border-blue-400 hover:bg-blue-950/60 shadow-[0_0_15px_rgba(59,130,246,0.2),inset_0_1px_2px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6),inset_0_0_20px_rgba(59,130,246,0.3)] active:scale-95 transition-all duration-300 overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-700/20 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-white/10 group-hover:translate-x-full -translate-x-full skew-x-12 transition-transform duration-700 pointer-events-none"></div>
+        
+        <i class="fa-solid fa-globe mr-2 text-blue-400 group-hover:text-blue-300 transition-colors drop-shadow-[0_0_8px_rgba(96,165,250,0.8)] z-10"></i>
+        <span class="tracking-widest group-hover:text-blue-50 drop-shadow-[0_0_5px_rgba(59,130,246,0.8)] z-10">1對1 連線對戰 (PvP)</span>
+    </button>
+
+    <button onclick="openUnifiedShop()" class="group relative bg-black/50 backdrop-blur-md text-white font-bold text-base py-3 rounded-2xl border border-purple-500/50 hover:border-purple-400 hover:bg-purple-950/60 shadow-[0_0_12px_rgba(168,85,247,0.2),inset_0_1px_2px_rgba(255,255,255,0.15)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] active:scale-95 transition-all duration-300 overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-white/10 group-hover:translate-x-full -translate-x-full skew-x-12 transition-transform duration-700 pointer-events-none"></div>
+        
+        <i class="fa-solid fa-store mr-1.5 text-purple-400 group-hover:text-purple-300 transition-colors drop-shadow-[0_0_8px_rgba(192,132,252,0.8)] z-10"></i>
+        <span class="tracking-wider drop-shadow-[0_0_5px_rgba(168,85,247,0.8)] z-10">商城</span>
+    </button>
+
+    <button onclick="renderGachaPreview(); document.getElementById('gacha-modal').classList.remove('hidden')" class="group relative bg-black/50 backdrop-blur-md text-white font-bold text-base py-3 rounded-2xl border border-pink-500/50 hover:border-pink-400 hover:bg-pink-950/60 shadow-[0_0_12px rgba(236,72,153,0.2),inset_0_1px_2px rgba(255,255,255,0.15)] hover:shadow-[0_0_20px rgba(236,72,153,0.5)] active:scale-95 transition-all duration-300 overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-red-500/20 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-white/10 group-hover:translate-x-full -translate-x-full skew-x-12 transition-transform duration-700 pointer-events-none"></div>
+        
+        <i class="fa-solid fa-gift mr-1.5 text-pink-400 group-hover:text-pink-300 transition-colors drop-shadow-[0_0_8px_rgba(244,114,182,0.8)] z-10"></i>
+        <span class="tracking-wider drop-shadow-[0_0_5px_rgba(236,72,153,0.8)] z-10">補給箱</span>
+    </button>
+
+  <div class="col-span-2 flex items-center bg-black/50 backdrop-blur-md border border-zinc-800/80 rounded-xl h-9 overflow-hidden px-2.5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
+        <div class="flex items-center text-[10px] font-black text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded-md mr-2.5 whitespace-nowrap shadow-sm">
+            <i class="fa-solid fa-bullhorn mr-1 text-amber-500 animate-bounce" style="animation-duration: 2s;"></i> 公告
+        </div>
+         <div class="flex-1 overflow-hidden flex items-center">
+            <marquee class="text-xs text-zinc-300 font-medium tracking-wide" scrollamount="4">
+                補給箱抽獎機率限時提升中！
+            </marquee>
+        </div>
+    </div>
+
+   
+
+</div>
+        </div>
+		<div class="absolute bottom-0 left-0 w-full z-[50] bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]" style="padding-bottom: env(safe-area-inset-bottom);">
+        <div class="flex justify-between items-center px-4 sm:px-8 h-16">
+            
+            <button onclick="openSceneSelect('sandbox')" class="flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-blue-400 active:scale-90 transition-all duration-300 group">
+                <i class="fa-solid fa-bug text-xl mb-1 group-hover:-translate-y-1 transition-transform drop-shadow-[0_0_5px_rgba(59,130,246,0)] group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]"></i>
+                <span class="text-[10px] font-bold tracking-widest transition-colors">生態箱</span>
+            </button>
+
+            <button onclick="openWeaponShop()" class="flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-emerald-400 active:scale-90 transition-all duration-300 group">
+                <i class="fa-solid fa-spray-can text-xl mb-1 group-hover:-translate-y-1 transition-transform drop-shadow-[0_0_5px_rgba(16,185,129,0)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]"></i>
+                <span class="text-[10px] font-bold tracking-widest transition-colors">武器</span>
+            </button>
+            
+            <button onclick="openDex()" class="flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-purple-400 active:scale-90 transition-all duration-300 group relative">
+                <i class="fa-solid fa-book-open text-xl mb-1 group-hover:-translate-y-1 transition-transform drop-shadow-[0_0_5px_rgba(168,85,247,0)] group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"></i>
+                <span class="text-[10px] font-bold tracking-widest transition-colors">圖記</span>
+                <span id="dex-progress" class="absolute top-1.5 right-4 sm:right-10 bg-black/80 border border-purple-500/40 text-purple-400 text-[8px] font-mono px-1 rounded-full pointer-events-none drop-shadow-md">
+                    0/4
+                </span>
+            </button>
+
+            <button onclick="openItemShop()" class="flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-cyan-400 active:scale-90 transition-all duration-300 group">
+                <i class="fa-solid fa-toolbox text-xl mb-1 group-hover:-translate-y-1 transition-transform drop-shadow-[0_0_5px_rgba(6,182,212,0)] group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"></i>
+                <span class="text-[10px] font-bold tracking-widest transition-colors">道具</span>
+            </button>
+
+			
+
+        </div>
+    </div>
+    </div>
+
+    <!-- PvP 連線對戰 Modal -->
+    <div id="pvp-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-blue-500/40 w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col text-center">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black text-white"><i class="fa-solid fa-wifi text-blue-400 mr-2"></i>1對1 線上對戰</h2>
+                <button onclick="closePvPModal()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-zinc-400 text-xs mb-4">使用相同的「房號ID」連接，即可與對手進行即時蛋糕保衛戰！</p>
+            
+            <div class="space-y-4 mb-5 text-left">
+                <div>
+                    <label class="block text-zinc-400 text-xs mb-1 font-bold">自訂對戰房號 (Room ID)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="pvp-room-input" class="bg-zinc-800 text-white font-mono font-bold tracking-wider text-center py-2.5 rounded-xl border border-zinc-700 flex-1 focus:outline-none focus:border-blue-500" value="8888">
+                        <button onclick="generateRandomRoom()" class="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2.5 rounded-xl text-sm" title="隨機產生"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 連線狀態提示區 -->
+            <div id="pvp-status-box" class="hidden bg-black/50 border border-zinc-800 rounded-2xl p-4 mb-4 text-sm text-zinc-300">
+                <div class="flex items-center justify-center gap-2 mb-1">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span id="pvp-status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                    </span>
+                    <span id="pvp-status-text" class="font-bold">連線中...</span>
+                </div>
+                <div class="text-xs text-zinc-500 mt-1" id="pvp-status-detail">正在連接 MQTT 伺服器...</div>
+				
+				<button onclick="cancelPvpMatchmaking()" class="bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-transform hover:scale-105 border border-red-500/50">
+				<i class="fa-solid fa-xmark mr-1"></i>取消連線
+			</button>
+            </div>
+
+            <button id="pvp-connect-btn" onclick="startPvPMatch()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-lg py-3 rounded-xl shadow-lg active:scale-95 transition">
+                連線並等待對手
+            </button>
+			
+        </div>
+    </div>
+
+	<div id="borders-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-pink-500/40 w-full max-w-md rounded-3xl p-5 shadow-[0_0_30px_rgba(236,72,153,0.15)] flex flex-col max-h-[85vh]">
+        
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-2xl font-black text-white flex items-center">
+                <i class="fa-solid fa-border-all text-pink-400 mr-2"></i>邊框收藏庫
+            </h2>
+            <button onclick="document.getElementById('borders-modal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-xl p-2 transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <p class="text-zinc-400 text-xs mb-4">隨時更換你的專屬外框特效，展現與眾不同的氣場！</p>
+        
+        <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div id="unlocked-borders-list" class="flex flex-col gap-3">
+                </div>
+        </div>
+
+    </div>
+</div>
+
+	<div id="gacha-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="bg-zinc-950 border-2 border-purple-950 w-full max-w-md rounded-3xl p-6 relative shadow-[0_0_50px_rgba(147,51,234,0.3)] text-center overflow-hidden">
+        
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-purple-600/20 blur-3xl rounded-full"></div>
+        <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-pink-600/20 blur-3xl rounded-full"></div>
+
+        <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 tracking-wider mb-1">限定扭蛋機</h2>
+        <p class="text-[11px] text-zinc-500 mb-4">每次消耗 <span class="text-yellow-500 font-bold">1,000</span> 金幣，有機會獲得限定特效！</p>
+
+        <div id="gacha-stage" class="min-h-[220px] flex items-center justify-center relative my-4 transition-all duration-300">
+            
+            <div id="gacha-preview-state" class="flex flex-col items-center">
+                <span class="text-[10px] text-purple-400 mb-3 font-black tracking-widest animate-pulse">終極大獎特效預覽 </span>
+                <div class="w-52 bg-black/80 border-4 border-transparent bg-gradient-to-r from-purple-600 via-pink-500 via-red-500 to-yellow-500 bg-[length:400%_400%] shadow-[0_0_25px_rgba(236,72,153,0.6)] p-3 rounded-2xl flex flex-col items-center justify-center">
+                    <div class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-500 via-red-500 to-purple-600 bg-[length:200%_auto] text-xs tracking-widest drop-shadow-[0_2px_10px_rgba(245,158,11,0.9)] mb-2 text-center">天使降臨</div>
+                    <div class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-1.5 border border-zinc-600"><i class="fa-solid fa-user text-xl text-zinc-400"></i></div>
+                    <div class="text-white font-bold text-[11px]">終極大獎展示</div>
+                </div>
+            </div>
+
+            <div id="gacha-shaking-state" class="hidden flex flex-col items-center justify-center">
+                <div class="text-8xl animate-[shake_0.15s_infinite] drop-shadow-[0_0_30px_rgba(168,85,247,0.6)]">🔮</div>
+                <p class="text-purple-400 font-black text-sm mt-4 tracking-widest animate-pulse">正在強力注入神話能量...</p>
+            </div>
+
+            <div id="gacha-reward-state" class="hidden flex flex-col items-center scale-0 transition-transform duration-500">
+                <div id="reward-glow-bg" class="absolute inset-0 bg-purple-500/20 blur-2xl rounded-full animate-ping"></div>
+                <h3 id="reward-rarity" class="text-xs font-black tracking-widest mb-1 text-purple-400">🎉【抽中獎勵】🎉</h3>
+                <div id="reward-display-box" class="my-3">
+                    </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+            <button id="gacha-close-btn" onclick="document.getElementById('gacha-modal').classList.add('hidden'); if(typeof switchBGM==='function') switchBGM(bgm);" class="w-1/3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 font-bold py-2.5 rounded-xl transition text-sm">
+                忍痛離開
+            </button>
+            <button id="gacha-play-btn" onclick="playGacha()" class="flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 hover:from-purple-500 hover:to-red-400 text-white font-black py-2.5 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] active:scale-95 transition text-sm tracking-wider">
+                啟動扭蛋 (1000金幣)
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- 場景選擇 Modal -->
+    <div id="scene-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black text-white">選擇戰場</h2>
+                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+                <!-- Kitchen -->
+                <div id="scene-btn-kitchen" class="relative bg-zinc-800 rounded-2xl p-3 border-2 border-amber-500 cursor-pointer overflow-hidden group transition hover:bg-zinc-700" onclick="selectScene('kitchen')">
+                    <div class="flex gap-3 h-24">
+                        <div class="w-28 sm:w-32 bg-amber-900 rounded-xl overflow-hidden relative border border-amber-700 flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-b from-[#78909c] to-[#4e2c14]"></div>
+                            <!-- 高解析度 SVG 縮圖 -->
+                            <div class="absolute inset-0 flex items-center justify-center p-2">
+                                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                                    <ellipse cx="50" cy="70" rx="35" ry="15" fill="black" opacity="0.4" />
+                                    <ellipse cx="50" cy="50" rx="30" ry="12" fill="#db2777" />
+                                    <rect x="20" y="50" width="60" height="15" fill="#f472b6" />
+                                    <ellipse cx="50" cy="65" rx="30" ry="12" fill="#9d174d" />
+                                    <circle cx="50" cy="35" r="8" fill="#ef4444" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center flex-1">
+                            <h3 class="font-bold text-base sm:text-lg text-white">廚房桌面</h3>
+                            <p class="text-xs text-zinc-400 mt-1 line-clamp-2">保護好你的草莓蛋糕！</p>
+                            <div class="mt-2 text-xs font-bold text-green-400"><i class="fa-solid fa-check mr-1"></i>已解鎖</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Living Room -->
+                <div id="scene-btn-living" class="relative bg-zinc-800 rounded-2xl p-3 border-2 border-zinc-700 cursor-pointer overflow-hidden group transition hover:bg-zinc-700" onclick="selectScene('living')">
+                    <div class="flex gap-3 h-24">
+                        <div class="w-28 sm:w-32 bg-slate-800 rounded-xl overflow-hidden relative border border-slate-600 flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-br from-[#1e293b] to-[#0f172a]"></div>
+                            <!-- 高解析度 SVG 縮圖 -->
+                            <div class="absolute inset-0 flex items-center justify-center p-2">
+                                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                                    <ellipse cx="50" cy="75" rx="40" ry="15" fill="black" opacity="0.4" />
+                                    <circle cx="50" cy="50" r="35" fill="#d97706" />
+                                    <circle cx="35" cy="35" r="5" fill="#451a03" />
+                                    <circle cx="60" cy="45" r="6" fill="#451a03" />
+                                    <circle cx="45" cy="65" r="4" fill="#451a03" />
+                                    <circle cx="65" cy="60" r="5" fill="#451a03" />
+                                    <circle cx="30" cy="55" r="5" fill="#451a03" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center flex-1">
+                            <h3 class="font-bold text-base sm:text-lg text-white">客廳地毯</h3>
+                            <p class="text-xs text-zinc-400 mt-1 line-clamp-2">更廣闊的空間，保護手工巧克力餅乾！</p>
+                            <div id="scene-lock-living" class="mt-2 text-xs font-bold text-yellow-400 flex items-center justify-between">
+                                <span><i class="fa-solid fa-lock mr-1"></i>解鎖: 800</span>
+                                <button class="bg-yellow-500/20 px-2 py-1 rounded border border-yellow-500/50 hover:bg-yellow-500/40">購買</button>
+                            </div>
+                            <div id="scene-unlocked-living" class="hidden mt-2 text-xs font-bold text-green-400"><i class="fa-solid fa-check mr-1"></i>已解鎖</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dining Room -->
+                <div id="scene-btn-dining" class="relative bg-zinc-800 rounded-2xl p-3 border-2 border-zinc-700 cursor-pointer overflow-hidden group transition hover:bg-zinc-700" onclick="selectScene('dining')">
+                    <div class="flex gap-3 h-24">
+                        <div class="w-28 sm:w-32 bg-red-900 rounded-xl overflow-hidden relative border border-red-700 flex-shrink-0">
+                            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjN2YxZDFkIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiM3ZjFkMWQiLz48cmVjdCB4PSIxMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjOTkxYjFiIi8+PHJlY3QgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzk5MWIxYiIvPjwvc3ZnPg==')] opacity-50"></div>
+                            <!-- 高解析度 SVG 縮圖 -->
+                            <div class="absolute inset-0 flex items-center justify-center p-2">
+                                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                                    <ellipse cx="50" cy="75" rx="45" ry="15" fill="black" opacity="0.4" />
+                                    <path d="M 30 50 C 30 30, 70 30, 80 50 C 90 70, 70 80, 50 80 C 30 80, 20 70, 30 50 Z" fill="#b45309" />
+                                    <path d="M 75 55 C 85 60, 95 50, 95 45 C 95 40, 85 45, 80 50" fill="#fffbeb" stroke="#78350f" stroke-width="2" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center flex-1">
+                            <h3 class="font-bold text-base sm:text-lg text-white">溫馨餐桌</h3>
+                            <p class="text-xs text-zinc-400 mt-1 line-clamp-2">豐盛的烤雞晚餐，小心四面八方的攻勢！</p>
+                            <div id="scene-lock-dining" class="mt-2 text-xs font-bold text-yellow-400 flex items-center justify-between">
+                                <span><i class="fa-solid fa-lock mr-1"></i>解鎖: 2500</span>
+                                <button class="bg-yellow-500/20 px-2 py-1 rounded border border-yellow-500/50 hover:bg-yellow-500/40">購買</button>
+                            </div>
+                            <div id="scene-unlocked-dining" class="hidden mt-2 text-xs font-bold text-green-400"><i class="fa-solid fa-check mr-1"></i>已解鎖</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bathroom -->
+                <div id="scene-btn-bathroom" class="relative bg-zinc-800 rounded-2xl p-3 border-2 border-zinc-700 cursor-pointer overflow-hidden group transition hover:bg-zinc-700" onclick="selectScene('bathroom')">
+                    <div class="flex gap-3 h-24">
+                        <div class="w-28 sm:w-32 bg-cyan-900 rounded-xl overflow-hidden relative border border-cyan-700 flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-b from-[#b2ebf2] to-[#164e63]"></div>
+                            <div class="absolute inset-0 flex items-center justify-center p-2">
+                                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                                    <rect x="20" y="30" width="60" height="40" rx="4" fill="#fbbf24" stroke="#d97706" stroke-width="2" />
+                                    <circle cx="30" cy="42" r="2" fill="#d97706" opacity="0.4" />
+                                    <circle cx="50" cy="50" r="3" fill="#d97706" opacity="0.4" />
+                                    <circle cx="70" cy="45" r="2" fill="#d97706" opacity="0.4" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center flex-1">
+                            <h3 class="font-bold text-base sm:text-lg text-white">潮濕浴室</h3>
+                            <p class="text-xs text-zinc-400 mt-1 line-clamp-2">濕滑的地板，小心潛伏的水蟑螂！</p>
+                            <div id="scene-lock-bathroom" class="mt-2 text-xs font-bold text-yellow-400 flex items-center justify-between">
+                                <span><i class="fa-solid fa-lock mr-1"></i>解鎖: 12000</span>
+                                <button class="bg-yellow-500/20 px-2 py-1 rounded border border-yellow-500/50 hover:bg-yellow-500/40">購買</button>
+                            </div>
+                            <div id="scene-unlocked-bathroom" class="hidden mt-2 text-xs font-bold text-green-400"><i class="fa-solid fa-check mr-1"></i>已解鎖</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 武器管理 Modal -->
+    <div id="weapon-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-emerald-500/40 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-2xl font-black text-white">武器庫</h2>
+                    <div class="bg-yellow-500/20 px-2 py-1 rounded-full border border-yellow-500/30 flex items-center gap-1 text-sm">
+                        <i class="fa-solid fa-coins text-yellow-400"></i>
+                        <span id="shop-coins-display" class="font-bold text-yellow-400 font-mono">0</span>
+                    </div>
+                </div>
+                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="lobby-weapon-list" class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- 道具店 Modal -->
+    <div id="item-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-cyan-500/40 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-2xl font-black text-white">消耗品商店</h2>
+                    <div class="bg-yellow-500/20 px-2 py-1 rounded-full border border-yellow-500/30 flex items-center gap-1 text-sm">
+                        <i class="fa-solid fa-coins text-yellow-400"></i>
+                        <span id="item-shop-coins-display" class="font-bold text-yellow-400 font-mono">0</span>
+                    </div>
+                </div>
+                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="lobby-item-list" class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- 特效外框商城 Modal (新功能) -->
+    <div id="unified-shop-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2">
+                <h2 class="text-2xl font-black text-white">
+                    <i class="fa-solid fa-store text-yellow-400 mr-1"></i>造型商城
+                </h2>
+                <div class="bg-yellow-500/20 px-2 py-1 rounded-full border border-yellow-500/30 flex items-center gap-1 text-sm">
+                    <i class="fa-solid fa-coins text-yellow-400"></i>
+                    <span id="c-shop-coins-display" class="font-bold text-yellow-400 font-mono">0</span>
+                </div>
+            </div>
+            <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex gap-2 mb-4 bg-zinc-800 p-1 rounded-xl">
+            <button id="tab-btn-border" onclick="switchShopTab('border')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-zinc-700 text-white transition-colors shadow-sm">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1 text-purple-400"></i>資訊卡外框
+            </button>
+            <button id="tab-btn-title" onclick="switchShopTab('title')" class="flex-1 py-2 rounded-lg text-sm font-bold text-zinc-400 hover:text-white hover:bg-zinc-700/50 transition-colors">
+                <i class="fa-solid fa-sparkles mr-1 text-cyan-400"></i>特效稱號
+            </button>
+        </div>
+        
+        <p id="shop-desc" class="text-zinc-400 text-xs mb-3">購買並配置動態流光外框特效，彰顯大師品味！</p>
+
+        <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div id="border-item-list" class="space-y-3"></div>
+            <div id="title-item-list" class="hidden space-y-3"></div>
+        </div>
+    </div>
+	</div>
+
+    <!-- 稱號自選管理 Modal (新功能) -->
+    <div id="title-select-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-blue-500/40 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-2xl font-black text-white"><i class="fa-solid fa-medal text-yellow-400 mr-2"></i>成就與稱號庫</h2>
+                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-zinc-400 text-xs mb-4">你可以自由佩戴目前已解鎖的任何稱號（提升等級以解鎖更多）</p>
+            <div id="unlocked-titles-list" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- 小強圖鑑 Modal -->
+    <div id="dex-modal" class="hidden absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-purple-500/40 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black text-white"><i class="fa-solid fa-book-open text-purple-400 mr-2"></i>生態觀察紀錄</h2>
+                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="text-xs text-zinc-400 mb-4 text-center">擊殺特定小強以解鎖詳細資訊。</div>
+            <div id="dex-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-3 pr-1 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- 升級提示 -->
+    <div id="level-up-banner" class="hidden absolute top-1/4 left-1/2 -translate-x-1/2 z-[70] text-center pointer-events-none">
+        <div class="text-6xl font-black text-gradient-gold drop-shadow-[0_0_20px_rgba(251,191,36,0.8)] animate-bounce mb-2">LEVEL UP!</div>
+        <div class="text-2xl font-bold text-white bg-black/60 px-6 py-2 rounded-full backdrop-blur-sm border border-yellow-500/50">
+            等級提升至 <span id="level-up-number" class="text-yellow-400 font-mono">2</span>
+        </div>
+        <div id="title-unlock-msg" class="hidden mt-2 text-xl font-bold text-cyan-400 bg-black/60 px-4 py-1 rounded-full backdrop-blur-sm border border-cyan-500/50">
+            解鎖新稱號！請至稱號庫查閱。
+        </div>
+    </div>
+
+    <!-- Combo -->
+    <div id="combo-display" class="hidden absolute top-[30%] left-1/2 -translate-x-1/2 z-40 text-center pointer-events-none combo-pulse">
+        <div class="text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-300 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] stroke-black" style="-webkit-text-stroke: 2px black;">
+            <span id="combo-count" class="text-7xl font-mono">2</span><span class="text-4xl">x</span>
+        </div>
+        <div class="text-xl font-black text-white drop-shadow-lg uppercase tracking-widest mt-[-10px] -rotate-3 text-red-500">COMBO!</div>
+    </div>
+
+    <!-- PVP 陷阱通知 -->
+    <div id="pvp-trap-notification" class="hidden absolute top-[25%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-red-950/95 border-2 border-red-500 text-red-200 px-6 py-3 rounded-2xl text-center shadow-2xl animate-bounce">
+        <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-2xl mb-1 block"></i>
+        <span id="pvp-notif-msg" class="font-bold text-sm sm:text-base">對手朝你釋放了一群小強！</span>
+    </div>
+
+    <!-- 頂部狀態欄 (遊戲內) -->
+    <div id="top-bar" class="hidden absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-start pointer-events-none">
+        <div class="flex flex-col gap-2 pointer-events-auto">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="backToLobby()" class="bg-black/70 hover:bg-black text-white w-10 h-10 rounded-full border border-zinc-600 flex items-center justify-center shadow-lg transition animate-none">
+                    <i class="fa-solid fa-house"></i>
+                </button>
+                <button onclick="toggleMusic()" id="game-music-btn" class="bg-black/70 hover:bg-black text-zinc-500 w-10 h-10 rounded-full border border-zinc-600 flex items-center justify-center shadow-lg transition pointer-events-auto" title="音樂開關">
+                    <i class="fa-solid fa-volume-xmark"></i>
+                </button>
+                
+                <!-- 戰鬥模式狀態 -->
+                <div id="battle-stats" class="flex gap-2 sm:gap-3 flex-wrap">
+                    <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-yellow-500/30 flex items-center gap-1.5 shadow-lg">
+                        <span class="text-yellow-400 text-sm font-bold"><i class="fa-solid fa-trophy"></i></span>
+                        <span id="score-text" class="text-white font-mono font-black text-base sm:text-lg">0</span>
+                    </div>
+                    <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 flex items-center gap-1.5 shadow-lg">
+                        <span class="text-red-400 text-sm font-bold"><i class="fa-solid fa-shield-heart"></i></span>
+                        <div class="w-16 sm:w-24 h-2.5 bg-gray-700 rounded-full overflow-hidden inline-block relative border border-gray-600">
+                            <div id="target-hp-bar" class="h-full bg-gradient-to-r from-red-500 to-emerald-500 w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PVP 對戰模式專屬狀態 -->
+                <div id="pvp-stats" class="hidden gap-2 sm:gap-3 flex-wrap">
+                    <div class="bg-black/70 backdrop-blur-md px-3 py-1 rounded-xl border border-emerald-500/30 flex flex-col items-start gap-0.5 shadow-lg">
+                        <span class="text-emerald-400 text-[10px] font-bold"><i class="fa-solid fa-shield-heart mr-0.5"></i>我的蛋糕</span>
+                        <div class="flex items-center gap-1">
+                            <div class="w-16 sm:w-20 h-2 bg-zinc-700 rounded-full overflow-hidden inline-block relative border border-zinc-600">
+                                <div id="pvp-my-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-green-400 w-full transition-all duration-300"></div>
+                            </div>
+                            <span id="pvp-my-hp-text" class="text-[9px] text-zinc-300 font-mono">100%</span>
+                        </div>
+                    </div>
+                    <div class="bg-black/70 backdrop-blur-md px-3 py-1 rounded-xl border border-red-500/30 flex flex-col items-start gap-0.5 shadow-lg">
+                        <span class="text-red-400 text-[10px] font-bold"><i class="fa-solid fa-shield-heart mr-0.5"></i>對手蛋糕</span>
+                        <div class="flex items-center gap-1">
+                            <div class="w-16 sm:w-20 h-2 bg-zinc-700 rounded-full overflow-hidden inline-block relative border border-zinc-600">
+                                <div id="pvp-opp-hp-bar" class="h-full bg-gradient-to-r from-red-500 to-rose-400 w-full transition-all duration-300"></div>
+                            </div>
+                            <span id="pvp-opp-hp-text" class="text-[9px] text-zinc-300 font-mono">100%</span>
+                        </div>
+                    </div>
+                    <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-blue-500/30 flex items-center gap-1.5 shadow-lg">
+                        <i class="fa-solid fa-money-bill-transfer text-blue-400 text-sm"></i>
+                        <span class="text-zinc-400 text-[10px]">對戰幣:</span>
+                        <span id="pvp-coins-text" class="text-blue-300 font-mono font-black text-sm">0</span>
+                    </div>
+                </div>
+
+                <!-- 生態箱狀態 -->
+                <div id="sandbox-stats" class="hidden bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-full border border-blue-500/30 flex items-center gap-3 shadow-lg">
+                    <span class="text-blue-400 text-sm font-bold"><i class="fa-solid fa-bug mr-1"></i>數量:</span>
+                    <span id="roach-count-text" class="text-white font-mono font-bold">10</span>
+                    <button id="add-roach-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1 rounded-md font-bold transition">
+                        +1 隻
+                    </button>
+                </div>
+            </div>
+            <!-- 時間顯示器 (遊戲內) -->
+            <div class="bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-zinc-700/50 inline-flex items-center gap-2 shadow-sm ml-12">
+                <i id="time-icon" class="fa-regular fa-sun text-yellow-400 text-sm transition-colors duration-1000"></i>
+                <span id="game-time-display" class="font-mono text-sm text-zinc-200">08:00</span>
+            </div>
+        </div>
+        
+        <!-- 夜間警告 (右上角) -->
+        <div id="night-warning" class="bg-purple-900/80 border border-purple-500 text-purple-200 px-3 py-1 rounded-lg text-xs font-bold animate-pulse hidden">
+            夜行種出沒機率 ↑
+        </div>
+    </div>
+
+    <!-- 遊戲主要容器 -->
+    <div id="game-container" class="hidden w-full h-full relative overflow-hidden flex-1 bg-black is-day">
+        <svg id="game-canvas" class="w-full h-full cursor-crosshair" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="crumb-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#f59e0b" /><stop offset="70%" stop-color="#b45309" /><stop offset="100%" stop-color="#451a03" />
+                </radialGradient>
+                <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fbbf24" /><stop offset="100%" stop-color="#b45309" />
+                </linearGradient>
+                <!-- 至尊黃金拖鞋流金漸層 -->
+                <linearGradient id="super-gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fffbeb" />
+                    <stop offset="30%" stop-color="#fef08a" />
+                    <stop offset="70%" stop-color="#eab308" />
+                    <stop offset="100%" stop-color="#ca8a04" />
+                </linearGradient>
+                <linearGradient id="tank-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#52525b" /><stop offset="100%" stop-color="#18181b" />
+                </linearGradient>
+                <linearGradient id="ninja-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4c1d95" /><stop offset="100%" stop-color="#1e1b4b" />
+                </linearGradient>
+                <linearGradient id="water-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#06b6d4" /><stop offset="100%" stop-color="#164e63" />
+                </linearGradient>
+
+                <!-- Kitchen -->
+                <pattern id="backsplash-pattern" width="30" height="15" patternUnits="userSpaceOnUse">
+                    <rect width="30" height="15" fill="#cfd8dc" stroke="#b0bec5" stroke-width="0.5" />
+                    <rect x="15" y="7.5" width="15" height="7.5" fill="#eceff1" stroke="#b0bec5" stroke-width="0.5" />
+                </pattern>
+                <linearGradient id="wood-table-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#4e2c14" /><stop offset="50%" stop-color="#3b1f0d" /><stop offset="100%" stop-color="#2a1405" />
+                </linearGradient>
+                <radialGradient id="cake-grad" cx="50%" cy="30%" r="50%">
+                    <stop offset="0%" stop-color="#f472b6" /><stop offset="70%" stop-color="#db2777" /><stop offset="100%" stop-color="#9d174d" />
+                </radialGradient>
+                <linearGradient id="cream-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" /><stop offset="100%" stop-color="#f3f4f6" />
+                </linearGradient>
+
+                <!-- Living Room -->
+                <pattern id="carpet-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <rect width="40" height="40" fill="#1e293b" />
+                    <path d="M0 20 L20 0 L40 20 L20 40 Z" fill="#334155" opacity="0.4"/>
+                    <path d="M10 30 L30 10" stroke="#0f172a" stroke-width="2" opacity="0.3"/>
+                </pattern>
+                <radialGradient id="cookie-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#d97706" /><stop offset="80%" stop-color="#92400e" /><stop offset="100%" stop-color="#78350f" />
+                </radialGradient>
+
+                <!-- Dining Room -->
+                <pattern id="cloth-pattern" width="60" height="60" patternUnits="userSpaceOnUse">
+                    <rect width="60" height="60" fill="#fee2e2" />
+                    <rect width="30" height="30" fill="#fca5a5" />
+                    <rect x="30" y="30" width="30" height="30" fill="#fca5a5" />
+                </pattern>
+                <radialGradient id="chicken-grad" cx="40%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="#d97706" /><stop offset="60%" stop-color="#92400e" /><stop offset="100%" stop-color="#451a03" />
+                </radialGradient>
+
+                <!-- Shield Glow -->
+                <radialGradient id="shield-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="70%" stop-color="rgba(103, 232, 249, 0.1)" />
+                    <stop offset="95%" stop-color="rgba(103, 232, 249, 0.6)" />
+                    <stop offset="100%" stop-color="rgba(103, 232, 249, 0)" />
+                </radialGradient>
+                <pattern id="tile-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <rect width="40" height="40" fill="#b2ebf2" /><rect x="20" y="20" width="20" height="20" fill="#80deea" />
+                </pattern>
+            </defs>
+            
+            <g id="scene-kitchen" class="scene-hidden">
+                <rect width="100%" height="100%" fill="url(#wood-table-grad)" />
+                <rect x="0" y="0" width="100%" height="45" fill="url(#backsplash-pattern)" />
+                <rect x="0" y="45" width="100%" height="8" fill="#78909c" />
+                <line x1="0" y1="53" x2="100%" y2="53" stroke="#37474f" stroke-width="1" />
+                <g id="target-cake" class="target-group cursor-pointer">
+                    <ellipse cx="0" cy="18" rx="60" ry="28" fill="black" opacity="0.45" />
+                    <ellipse cx="0" cy="5" rx="52" ry="22" fill="url(#cake-grad)" />
+                    <rect x="-52" y="5" width="104" height="22" fill="url(#cake-grad)" />
+                    <ellipse cx="0" cy="27" rx="52" ry="22" fill="#9d174d" />
+                    <path d="M -47 5 C -30 -5, -20 15, -10 5 C 0 -5, 10 15, 20 5 C 30 -5, 40 10, 47 5 L 47 12 C 37 17, 20 4, 10 14 C 0 4, -10 17, -20 7 C -30 14, -40 17, -47 12 Z" fill="url(#cream-grad)" />
+                    <path d="M -5 -12 C -10 -12, -15 -5, -10 5 C -5 10, 5 10, 10 5 C 15 -5, 10 -12, 5 -12 Z" fill="#ef4444" />
+                    <!-- Shield Effect -->
+                    <circle id="shield-effect-kitchen" cx="0" cy="5" r="80" fill="url(#shield-grad)" class="hidden shield-active pointer-events-none" />
+                </g>
+            </g>
+
+            <g id="scene-living" class="scene-hidden">
+                <rect width="100%" height="100%" fill="url(#carpet-pattern)" />
+                <rect id="living-table" x="10%" y="20%" width="80%" height="60%" rx="20" fill="#94a3b8" opacity="0.15" stroke="#cbd5e1" stroke-width="4" pointer-events-none />
+                <g id="target-cookie" class="target-group cursor-pointer">
+                    <ellipse cx="0" cy="10" rx="55" ry="55" fill="black" opacity="0.4" />
+                    <circle cx="0" cy="0" r="50" fill="url(#cookie-grad)" />
+                    <path d="M 0 -50 C 40 -40, 50 10, 30 40 C 0 50, -40 30, -50 0 C -40 -30, -20 -50, 0 -50 Z" fill="none" stroke="#78350f" stroke-width="2" opacity="0.5"/>
+                    <circle cx="-15" cy="-20" r="6" fill="#451a03" /><circle cx="20" cy="-10" r="7" fill="#451a03" />
+                    <circle cx="-5" cy="15" r="5" fill="#451a03" /><circle cx="25" cy="25" r="6" fill="#451a03" />
+                    <circle cx="-25" cy="5" r="8" fill="#451a03" />
+                    <!-- Shield Effect -->
+                    <circle id="shield-effect-living" cx="0" cy="0" r="75" fill="url(#shield-grad)" class="hidden shield-active pointer-events-none" />
+                </g>
+            </g>
+
+            <g id="scene-dining" class="scene-hidden">
+                <rect width="100%" height="100%" fill="url(#cloth-pattern)" />
+                <!-- 盤子 -->
+                <ellipse id="dining-plate-shadow" cx="50%" cy="50%" rx="105" ry="65" fill="black" opacity="0.3" pointer-events-none/>
+                <ellipse id="dining-plate" cx="50%" cy="50%" rx="100" ry="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" pointer-events-none/>
+                <ellipse id="dining-plate-inner" cx="50%" cy="50%" rx="70" ry="40" fill="none" stroke="#e2e8f0" stroke-width="2" pointer-events-none/>
+                <g id="target-chicken" class="target-group cursor-pointer">
+                    <!-- 烤雞 -->
+                    <path d="M -40 0 C -40 -30, 20 -40, 40 -20 C 60 0, 50 20, 20 30 C -10 40, -40 30, -40 0 Z" fill="url(#chicken-grad)"/>
+                    <!-- 雞腿 -->
+                    <path d="M 30 -5 C 50 5, 70 -5, 75 -15 C 80 -25, 60 -25, 45 -15" fill="url(#chicken-grad)" stroke="#78350f" stroke-width="1"/>
+                    <path d="M 68 -16 C 75 -15, 85 -20, 83 -25 C 80 -30, 70 -25, 71 -19 Z" fill="#fffbeb"/>
+                    <path d="M 20 20 C 40 30, 50 45, 40 55 C 30 65, 10 55, 15 40" fill="url(#chicken-grad)" stroke="#78350f" stroke-width="1"/>
+                    <path d="M 38 52 C 45 55, 40 65, 35 65 C 30 65, 30 55, 36 50 Z" fill="#fffbeb"/>
+                    <!-- Shield Effect -->
+                    <circle id="shield-effect-dining" cx="20" cy="10" r="90" fill="url(#shield-grad)" class="hidden shield-active pointer-events-none" />
+                </g>
+            </g>
+
+            <g id="scene-bathroom" class="scene-hidden">
+                <rect width="100%" height="100%" fill="#e0f7fa" />
+                <rect x="0" y="0" width="100%" height="60%" fill="url(#tile-pattern)" />
+                <rect x="0" y="60%" width="100%" height="40%" fill="#78909c" />
+                <line x1="0" y1="60%" x2="100%" y2="60%" stroke="#546e7a" stroke-width="3" />
+                <!-- 洗手台 -->
+                <ellipse cx="50%" cy="60%" rx="80" ry="25" fill="#ffffff" stroke="#cfd8dc" stroke-width="2" />
+                <rect x="43%" y="55%" width="14%" height="30%" rx="5" fill="#b0bec5" />
+                <circle cx="50%" cy="58%" r="10" fill="#90a4ae" />
+                <rect x="48%" y="62%" width="4%" height="15%" rx="2" fill="#78909c" />
+                <!-- 水龍頭 -->
+                <path d="M-8 -10 Q-8 -30 0 -35 Q8 -30 8 -10" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1" />
+                <!-- 水滴 -->
+                <ellipse cx="-4" cy="-5" rx="2" ry="4" fill="#4dd0e1" opacity="0.6" />
+                <ellipse cx="4" cy="-2" rx="1.5" ry="3" fill="#4dd0e1" opacity="0.5" />
+                <g id="target-sponge" class="target-group cursor-pointer">
+                    <ellipse cx="0" cy="22" rx="45" ry="18" fill="black" opacity="0.35" />
+                    <rect x="-40" y="-12" width="80" height="34" rx="6" fill="#fbbf24" stroke="#d97706" stroke-width="2" />
+                    <!-- 海綿孔洞 -->
+                    <circle cx="-25" cy="-2" r="3" fill="#d97706" opacity="0.4" />
+                    <circle cx="0" cy="4" r="4" fill="#d97706" opacity="0.4" />
+                    <circle cx="25" cy="-4" r="2.5" fill="#d97706" opacity="0.4" />
+                    <circle cx="-10" cy="8" r="2" fill="#d97706" opacity="0.4" />
+                    <circle cx="15" cy="10" r="3" fill="#d97706" opacity="0.4" />
+                    <!-- Shield Effect -->
+                    <circle id="shield-effect-bathroom" cx="0" cy="5" r="75" fill="url(#shield-grad)" class="hidden shield-active pointer-events-none" />
+                </g>
+            </g>
+
+            <g id="scene-boss" class="scene-hidden">
+                <rect width="100%" height="100%" fill="#1a0a0a" />
+                <!-- 下水道管線 -->
+                <rect x="0" y="75%" width="100%" height="25%" fill="#0d0d0d" />
+                <rect x="0" y="72%" width="100%" height="6" fill="#1f1f1f" />
+                <!-- 管線 -->
+                <rect x="10%" y="78%" width="30%" height="12" rx="6" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1" />
+                <rect x="55%" y="80%" width="35%" height="10" rx="5" fill="#222222" stroke="#333333" stroke-width="1" />
+                <circle cx="40%" cy="84%" r="4" fill="#1a1a1a" />
+                <circle cx="70%" cy="85%" r="3" fill="#1a1a1a" />
+                <!-- 汙水漬 -->
+                <ellipse cx="30%" cy="85%" rx="60" ry="8" fill="#1a3320" opacity="0.4" />
+                <ellipse cx="65%" cy="88%" rx="40" ry="5" fill="#1a3320" opacity="0.3" />
+                <!-- 苔癬 -->
+                <circle cx="15%" cy="76%" r="8" fill="#1a4a2a" opacity="0.3" />
+                <circle cx="22%" cy="74%" r="5" fill="#1a4a2a" opacity="0.25" />
+                <circle cx="80%" cy="76%" r="6" fill="#1a4a2a" opacity="0.3" />
+                <!-- 滴落的水滴 -->
+                <ellipse cx="35%" cy="10%" rx="1.5" ry="4" fill="#4dd0e1" opacity="0.2" />
+                <ellipse cx="75%" cy="20%" rx="1" ry="3" fill="#4dd0e1" opacity="0.15" />
+                <g id="target-boss-food" class="target-group cursor-pointer">
+                    <!-- 暗黑蛋糕陰影 -->
+                    <ellipse cx="0" cy="22" rx="65" ry="30" fill="black" opacity="0.6" />
+                    <!-- 腐化底座 -->
+                    <rect x="-58" y="8" width="116" height="26" rx="3" fill="#2d0a0a" stroke="#4a1515" stroke-width="1.5" />
+                    <!-- 蛋糕主體 -->
+                    <rect x="-55" y="-14" width="110" height="24" rx="2" fill="#3d0c0c" stroke="#5a1a1a" stroke-width="1.5" />
+                    <ellipse cx="0" cy="-14" rx="55" ry="10" fill="#4a1010" stroke="#5a1a1a" stroke-width="1.5" />
+                    <!-- 暗紅糖霜 -->
+                    <path d="M-55 -14 Q-40 -18 -25 -14 Q-10 -10 5 -14 Q20 -18 35 -14 Q50 -10 55 -14" fill="none" stroke="#8b1a1a" stroke-width="3" opacity="0.8" />
+                    <!-- 腐化裝飾 -->
+                    <path d="M-30 -6 Q-25 -12 -20 -6 Q-15 0 -10 -6" fill="none" stroke="#5a2020" stroke-width="2" opacity="0.6" />
+                    <path d="M10 -6 Q15 -12 20 -6 Q25 0 30 -6" fill="none" stroke="#5a2020" stroke-width="2" opacity="0.6" />
+                    <!-- 裂縫 -->
+                    <path d="M-15 -8 L-10 -2 L-5 -10" fill="none" stroke="#1a0505" stroke-width="1.5" opacity="0.5" />
+                    <!-- Shield Effect -->
+                    <circle id="shield-effect-boss" cx="0" cy="5" r="90" fill="url(#shield-grad)" class="hidden shield-active pointer-events-none" />
+                </g>
+            </g>
+
+            <g id="crumbs-container"></g>
+            <g id="roaches-container"></g>
+            <g id="splatters-container"></g>
+            <g id="waves-container"></g>
+        </svg>
+
+        <!-- 夜間覆蓋層 (變暗) -->
+        <div id="night-overlay" class="absolute inset-0 bg-blue-950/40 mix-blend-multiply"></div>
+        <div id="damage-mask" class="absolute inset-0 pointer-events-none transition-opacity duration-150 opacity-0 bg-red-600/30"></div>
+        
+        <!-- PVP 致盲迷霧遮罩 -->
+        <div id="pvp-blind-overlay" class="hidden absolute inset-0 bg-black/95 z-30 flex items-center justify-center pointer-events-none transition-opacity duration-300">
+            <div class="text-center">
+                <i class="fa-solid fa-eye-slash text-purple-500 text-5xl mb-2 animate-pulse"></i>
+                <div class="text-purple-300 font-bold text-lg">你被致盲了！視線極度受阻！</div>
+            </div>
+        </div>
+
+        <div id="weapon-slipper" class="absolute pointer-events-none opacity-0 w-24 h-24 transition-transform duration-75 origin-center weapon-glow-transition z-50"></div>
+    </div>
+
+    <!-- PVP 懸浮道具欄 (在遊戲右側，對戰時才有用) -->
+    <div id="pvp-traps-panel" class="hidden absolute right-3 top-[30%] z-40 flex flex-col gap-3 pointer-events-auto">
+        <!-- 致盲迷霧 -->
+        <button onclick="buyPvPTrap('darken')" id="btn-trap-darken" class="group bg-zinc-900/90 hover:bg-zinc-800 border-2 border-purple-500/50 rounded-2xl p-2.5 flex flex-col items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shadow-2xl active:scale-95 transition">
+            <i class="fa-solid fa-eye-slash text-purple-400 text-base sm:text-lg group-hover:animate-pulse"></i>
+            <span class="text-[9px] font-bold text-purple-200 mt-1">致盲迷霧</span>
+            <span class="text-[9px] font-mono font-black text-yellow-400 mt-0.5">$100</span>
+        </button>
+        <!-- 蟑螂大軍 -->
+        <button onclick="buyPvPTrap('swarm')" id="btn-trap-swarm" class="group bg-zinc-900/90 hover:bg-zinc-800 border-2 border-red-500/50 rounded-2xl p-2.5 flex flex-col items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shadow-2xl active:scale-95 transition">
+            <i class="fa-solid fa-bugs text-red-400 text-base sm:text-lg group-hover:animate-bounce"></i>
+            <span class="text-[9px] font-bold text-red-200 mt-1">小強突襲</span>
+            <span class="text-[9px] font-mono font-black text-yellow-400 mt-0.5">$150</span>
+        </button>
+        <!-- 小強派對 -->
+        <button onclick="buyPvPTrap('party')" id="btn-trap-party" class="group bg-zinc-900/90 hover:bg-zinc-800 border-2 border-amber-500/50 rounded-2xl p-2.5 flex flex-col items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shadow-2xl active:scale-95 transition">
+            <i class="fa-solid fa-champagne-glasses text-amber-400 text-base sm:text-lg group-hover:rotate-12"></i>
+            <span class="text-[9px] font-bold text-amber-200 mt-1">小強派對</span>
+            <span class="text-[9px] font-mono font-black text-yellow-400 mt-0.5">$250</span>
+        </button>
+    </div>
+
+    <!-- 底部面板 -->
+    <div id="bottom-bar" class="hidden bg-black/90 backdrop-blur-md border-t border-zinc-800 p-2 sm:p-3 flex flex-col items-center gap-2 z-20">
+        <div id="sandbox-tools" class="hidden justify-center items-center gap-3 w-full max-w-md">
+            <button id="tool-food" class="tool-btn active-tool flex-1 py-2 px-3 rounded-xl bg-amber-600 text-white font-bold text-xs sm:text-sm flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-cookie-bite text-lg"></i><span>餵食</span>
+            </button>
+            <button id="tool-hand" class="tool-btn flex-1 py-2 px-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-hand-pointer text-lg"></i><span>互動/抓取</span>
+            </button>
+            <button id="tool-spray" class="tool-btn flex-1 py-2 px-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-spray-can text-lg"></i><span>驅趕</span>
+            </button>
+            <button id="clear-all-btn" class="flex-none p-3 rounded-xl bg-red-950 hover:bg-red-900 border border-red-800 text-red-200 transition">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>
+        
+        <!-- 戰鬥面板: 武器與道具 -->
+        <div id="battle-panels" class="hidden flex-col gap-2 w-full max-w-lg">
+            <div id="battle-items" class="flex justify-end gap-2 w-full px-1">
+                <!-- 道具欄位 -->
+                <button id="btn-use-shield" onclick="useItem('plastic_wrap')" class="relative flex items-center justify-center bg-cyan-900/60 hover:bg-cyan-800 border border-cyan-700 rounded-lg p-1.5 min-w-[3rem] transition pointer-events-auto">
+                    <i class="fa-solid fa-box-archive text-cyan-400 text-lg"></i>
+                    <span id="battle-shield-count" class="absolute -top-1.5 -right-1.5 bg-cyan-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">0</span>
+                    <div id="shield-cd-overlay" class="absolute inset-0 bg-black/70 rounded-lg flex items-center justify-center text-white font-mono text-xs opacity-0 pointer-events-none transition-opacity"></div>
+                </button>
+            </div>
+            <div id="battle-weapons" class="flex justify-center items-center gap-2 w-full"></div>
+        </div>
+    </div>
+
+    <!-- 結算彈窗 -->
+    <div id="game-over-modal" class="hidden fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border-2 border-red-500 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
+            <h2 class="text-3xl font-black text-red-500 mb-2">防線崩潰</h2>
+            <p class="text-zinc-400 text-sm mb-6">目標物已被小強啃食殆盡...</p>
+            <div class="bg-black/50 rounded-2xl p-4 mb-6 grid grid-cols-2 gap-4">
+                <div><div class="text-xs text-zinc-500">本次擊殺</div><div id="result-score" class="text-2xl font-black text-emerald-400 font-mono">0</div></div>
+                <div><div class="text-xs text-zinc-500">獲得金幣</div><div id="result-coins" class="text-2xl font-black text-yellow-400 font-mono">0</div></div>
+            </div>
+            <button onclick="backToLobby()" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold text-lg py-3 rounded-xl transition">返回大廳</button>
+        </div>
+    </div>
+
+    <!-- PVP 結算彈窗 -->
+    <div id="pvp-end-modal" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="pvp-end-box" class="w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl border-2 relative overflow-hidden">
+            <div id="pvp-result-icon" class="text-6xl mb-3">🏆</div>
+            <h2 id="pvp-result-title" class="text-4xl font-black mb-2 tracking-widest text-yellow-500">YOU WIN!</h2>
+            <p id="pvp-result-desc" class="text-zinc-400 text-sm mb-6">成功擊潰對手！你的蛋糕依然健在。</p>
+            
+            <div class="bg-black/50 rounded-2xl p-4 mb-6 grid grid-cols-2 gap-4 border border-zinc-800">
+                <div>
+                    <div class="text-xs text-zinc-500">獲得連線金幣</div>
+                    <div id="pvp-gold-reward" class="text-2xl font-black text-yellow-400 font-mono">+100</div>
+                </div>
+                <div>
+                    <div class="text-xs text-zinc-500">對戰房號</div>
+                    <div id="pvp-end-room" class="text-2xl font-black text-blue-400 font-mono">8888</div>
+                </div>
+            </div>
+            <button onclick="backToLobby()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-lg py-3 rounded-xl transition">返回大廳</button>
+        </div>
+    </div>
+
+	<div id="boss-event-banner" class="fixed top-4 left-4 z-[9999] pointer-events-none animate-bounce ">
+    <button onclick="closeModals(); selectScene('boss')" class="pointer-events-auto flex flex-col items-center justify-center w-20 h-20 bg-gradient-to-br from-red-600 via-red-700 to-black rounded-full border-2 border-yellow-400 shadow-[0_0_15px_rgba(220,38,38,0.7)] hover:scale-110 active:scale-95 transition relative group">
+        <i class="fa-solid fa-skull-crossbones text-2xl text-yellow-400 animate-pulse"></i>
+        <span class="text-[10px] font-black text-white tracking-tighter mt-0.5">BOSS 戰</span>
+        
+        <div class="absolute -bottom-2 bg-yellow-500 text-black font-mono font-bold text-[9px] px-1.5 py-0.5 rounded-full border border-zinc-900 shadow">
+            <span id="boss-timer">10:00</span>
+        </div>
+        
+        <div class="absolute left-24 bg-zinc-900/90 text-white text-xs px-2 py-1 rounded-md border border-zinc-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
+            🔥 限時 10 分鐘！點擊立刻開戰！
+        </div>
+    </button>
+</div>
+
+<div id="boss-warning-overlay" class="hidden absolute inset-0 z-[60] pointer-events-none flex items-center justify-center bg-red-900/40">
+        <div class="text-6xl md:text-8xl font-black text-red-600 tracking-widest drop-shadow-[0_0_30px_rgba(220,38,38,1)] animate-pulse" style="-webkit-text-stroke: 3px black;">
+            WARNING
+        </div>
+    </div>
+
+    <div id="boss-ui-container" class="hidden absolute top-6 left-1/2 -translate-x-1/2 z-[55] w-[90%] max-w-lg pointer-events-none transition-all duration-500 transform -translate-y-20">
+        <div class="flex justify-between items-end text-red-500 font-black mb-1 px-1 drop-shadow-md">
+            <span class="flex items-center gap-2 text-lg">
+                <i class="fa-solid fa-bug text-red-600"></i> 變異大蟑螂王 (Lv.MAX)
+            </span>
+            <span id="boss-hp-text" class="text-xl font-mono">100 / 100</span>
+        </div>
+        <div class="w-full bg-zinc-900 border-2 border-red-900 rounded-full h-5 shadow-[0_0_20px_rgba(220,38,38,0.6)] overflow-hidden relative">
+            <div id="boss-hp-bar" class="bg-gradient-to-r from-red-800 via-red-600 to-orange-500 h-full w-full transition-all duration-200"></div>
+            <div class="absolute top-0 left-0 right-0 h-1/2 bg-white/20 rounded-full"></div>
+        </div>
+    </div>
+	
+	
+	<div id="naming-modal" class="hidden fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border-2 border-yellow-500/50 w-full max-w-sm rounded-3xl p-6 shadow-[0_0_40px_rgba(234,179,8,0.2)] flex flex-col items-center text-center">
+        <div class="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center border-2 border-zinc-600 mb-4 shadow-inner">
+            <i class="fa-solid fa-user-ninja text-3xl text-zinc-400"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white mb-2 tracking-wide">建立你的代號</h2>
+        <p class="text-zinc-400 text-xs mb-6">歡迎來到不准動！請輸入你的滅蟑大師稱號，最多 8 個字。</p>
+        <div class="w-full relative mb-4">
+            <input type="text" id="player-name-input" maxlength="8" placeholder="輸入名稱..." 
+                   class="w-full bg-zinc-800 border border-zinc-600 text-white text-center font-bold text-lg rounded-xl py-3 px-4 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all placeholder:text-zinc-600">
+            <button onclick="generateRandomName()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-yellow-400 transition-colors p-2" title="隨機產生">
+                <i class="fa-solid fa-dice"></i>
+            </button>
+        </div>
+        <button onclick="confirmPlayerName()" class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-black text-lg py-3 rounded-xl shadow-lg transition-transform active:scale-95 border-b-4 border-yellow-700 active:border-b-0 active:translate-y-1">
+            進入遊戲 <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+    </div>
+</div>
+
+<div id="online-modal" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-emerald-500/40 w-full max-w-md rounded-3xl p-5 shadow-[0_0_30px_rgba(16,185,129,0.15)] flex flex-col max-h-[75vh]">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-black text-white flex items-center">
+                <i class="fa-solid fa-earth-asia text-emerald-400 mr-2"></i>當前線上玩家
+            </h2>
+            <button onclick="document.getElementById('online-modal').classList.add('hidden')" class="text-zinc-500 hover:text-white text-xl p-1 transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div id="online-players-list" class="flex flex-col gap-2">
+                </div>
+        </div>
+    </div>
+</div>
+<div id="change-name-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl w-80 max-w-[90%] text-center shadow-2xl animate-scale-in">
+        <h3 class="text-xl font-black text-yellow-400 mb-2">
+            <i class="fa-solid fa-pen-to-square mr-2"></i>變更玩家暱稱
+        </h3>
+        <p class="text-zinc-400 text-xs mb-4">更改名字需要消耗 <span class="text-amber-400 font-bold">10,000</span> 金幣</p>
+        
+        <input type="text" id="new-username-input" maxlength="12" placeholder="請輸入新暱稱 (最多12字)" 
+               class="w-full bg-zinc-800 border border-zinc-600 text-white text-center px-3 py-2.5 rounded-xl mb-4 focus:outline-none focus:border-yellow-500 font-bold text-sm" />
+        
+        <div class="flex gap-3">
+            <button onclick="closeChangeNameModal()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded-xl text-sm transition">
+                取消
+            </button>
+            <button onclick="confirmChangeName()" class="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-black py-2 rounded-xl text-sm transition shadow-lg">
+                確認改名
+            </button>
+        </div>
+    </div>
+</div>
+	
+<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        var vConsole = new window.VConsole();
+    </script>
+    <script src="./config/constants.js"></script>
+    <script src="./config/weapons.js"></script>
+    <script src="./config/scenes.js"></script>
+    <script src="./config/roach-types.js"></script>
+    <script src="./config/titles.js"></script>
+    <script src="./config/items.js"></script>
+    <script src="./config/borders.js"></script>
+    <script src="./config/gacha.js"></script>
+    <script src="./main.js"></script>
+	<script>
+		// 處理從起始畫面進入大廳的邏輯
+function enterGameFromStart() {
+    const startScreen = document.getElementById('start-screen');
+    
+    // 1. 解鎖並播放音樂
+    if (typeof bgmState !== 'undefined' && bgmState.muted) {
+        toggleMusic(); 
+    } else if (typeof bgmState !== 'undefined' && !bgmState.muted && bgmState.currentAudio) {
+        bgmState.currentAudio.play().catch(e => console.log('音樂播放失敗:', e));
+    }
+
+    // 2. 淡出起始畫面
+    startScreen.classList.add('opacity-0');
+    startScreen.classList.add('pointer-events-none');
+    
+    // 3. 等待淡出動畫結束後完全隱藏，並觸發「名字檢查」
+    setTimeout(() => {
+        startScreen.classList.add('hidden');
+        
+        // 🌟 核心銜接：點擊進去後馬上跳出命名彈窗 (如果還沒取名)
+        if (typeof checkPlayerName === 'function') {
+            checkPlayerName();
+        }
+    }, 500);
+}
+	// 1. 禁止手機端「雙指縮放」
+	document.addEventListener('touchstart', function(event) {
+		if (event.touches.length > 1) {
+			event.preventDefault();
+		}
+	}, { passive: false });
+
+	// 2. 禁止手機端「雙擊快速縮放」
+	let lastTouchEnd = 0;
+	document.addEventListener('touchend', function(event) {
+		const now = (new Date()).getTime();
+		if (now - lastTouchEnd <= 300) {
+			event.preventDefault();
+		}
+		lastTouchEnd = now;
+	}, { passive: false });
+
+	// 3. 禁止電腦端「Ctrl + 滾輪縮放」或「觸控板雙指縮放」
+	document.addEventListener('wheel', function(event) {
+		if (event.ctrlKey || event.metaKey) {
+			event.preventDefault();
+		}
+	}, { passive: false });
+
+	// 4. 禁止電腦端「Ctrl + '+' / '-' 按鍵縮放」
+	document.addEventListener('keydown', function(event) {
+		if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '-' || event.key === '+')) {
+			event.preventDefault();
+		}
+	});
+</script>
+</body>
+</html>
